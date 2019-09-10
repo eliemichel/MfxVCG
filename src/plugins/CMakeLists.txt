@@ -19,6 +19,9 @@ set(INC
 )
 
 set(SRC
+  VcgMesh.h
+  VcgPlugin.h
+  VcgPlugin.cpp
   mfx_vcg_plugin.cpp
 )
 
