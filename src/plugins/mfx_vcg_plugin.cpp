@@ -74,7 +74,6 @@ static void runtime_init(PluginRuntime *runtime, const char *plugin_identifier, 
 // Core cook functions
 
 void vcg_describe_convex_hull(OfxParamSetHandle parameters, OfxParameterSuiteV1 *parameterSuite) {
-    parameterSuite->paramDefine(parameters, kOfxParamTypeInteger, "axis", NULL);
 }
 
 bool vcg_cook_convex_hull(VcgMesh & input_mesh,
@@ -86,12 +85,6 @@ bool vcg_cook_convex_hull(VcgMesh & input_mesh,
 	// replaces the input_mesh (in_place = true) or if a new mesh has been
 	// allocated and is returned in output_mesh (in_place = false).
 	*in_place = false;
-
-	OfxParamHandle axis_param;
-    int axis_value;
-	
-    parameterSuite->paramGetHandle(parameters, "axis", &axis_param, NULL);
-    parameterSuite->paramGetValue(axis_param, &axis_value);
 
 	vcg::tri::UpdateNormal<VcgMesh>::PerFaceNormalized(input_mesh);
 	return vcg::tri::ConvexHull<VcgMesh,VcgMesh>::ComputeConvexHull(input_mesh, output_mesh);
