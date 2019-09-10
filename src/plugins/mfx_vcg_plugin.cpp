@@ -263,7 +263,7 @@ static OfxStatus cook(PluginRuntime *runtime, OfxMeshEffectHandle instance) {
 
     // Fill in output data
 	size_t i = 0;
-	for (vi = vcg_output_mesh.vert.begin() ; vi != vcg_output_mesh.vert.end(); ++vi) {
+	for (vi = vcg_output_mesh.vert.begin() ; vi != vcg_output_mesh.vert.end(); ++vi, ++i) {
 		output_points[3 * i + 0] = vi->P().X();
 		output_points[3 * i + 1] = vi->P().Y();
 		output_points[3 * i + 2] = vi->P().Z();
