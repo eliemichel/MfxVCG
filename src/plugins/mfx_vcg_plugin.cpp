@@ -16,35 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
-#include <string.h>
+#include <PluginSupport/MfxRegister>
+#include "VcgPlugin.h"
 
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/convex_hull.h>
 #include <vcg/complex/algorithms/smooth.h>
-
-#include "VcgPlugin.h"
-
-// When increasing PLUGIN_COUNT, Ctrl+F for all the occurences of "PLUGIN_COUNT"
-// in this file to find comment blocks explaining what must be changed
-// consequently.
-#define PLUGIN_COUNT 2
 
 ///////////////////////////////////////////////////////////////////////////////
 // Convex Hull Plugin
 
 class ConvexHullPlugin : public VcgPlugin {
 public:
-	ConvexHullPlugin() {
-		ofxPlugin.pluginIdentifier = "ConvexHull";
+	const char* GetName() override {
+		return "Convex Hull";
 	}
 
+protected:
 	void vcgDescribe(OfxParamSetHandle parameters) override {
 	}
 	
 	bool vcgCook(VcgMesh & input_mesh,
 			     VcgMesh & output_mesh,
-			     OfxParamSetHandle parameters,
 			     bool *in_place) override {
 		// in_place is used to signal back to the callee whether the filtered mesh
 		// replaces the input_mesh (in_place = true) or if a new mesh has been
@@ -62,34 +55,25 @@ public:
 
 class LaplacianSmoothPlugin : public VcgPlugin {
 public:
-	LaplacianSmoothPlugin() {
-		ofxPlugin.pluginIdentifier = "LaplacianSmooth";
+	const char* GetName() override {
+		return "Laplacian Smooth";
 	}
 
+protected:
 	void vcgDescribe(OfxParamSetHandle parameters) override {
-		parameterSuite->paramDefine(parameters, kOfxParamTypeInteger, "Steps", NULL);
-		parameterSuite->paramDefine(parameters, kOfxParamTypeBoolean, "Smooth Selected", NULL);
-		parameterSuite->paramDefine(parameters, kOfxParamTypeBoolean, "Cotangent Weight", NULL);
+		AddParam("Steps", 1);
+		AddParam("Smooth Selected", false);
+		AddParam("Cotangent Weight", false);
 	}
 	
 	bool vcgCook(VcgMesh & input_mesh,
 			     VcgMesh & output_mesh,
-			     OfxParamSetHandle parameters,
 			     bool *in_place) override {
 		*in_place = true;
 	
-		OfxParamHandle param;
-		int steps;
-		bool smooth_selected, cotangent_weight;
-	
-		parameterSuite->paramGetHandle(parameters, "Steps", &param, NULL);
-		parameterSuite->paramGetValue(param, &steps);
-
-		parameterSuite->paramGetHandle(parameters, "Smooth Selected", &param, NULL);
-		parameterSuite->paramGetValue(param, &smooth_selected);
-
-		parameterSuite->paramGetHandle(parameters, "Cotangent Weight", &param, NULL);
-		parameterSuite->paramGetValue(param, &cotangent_weight);
+		int steps = GetParam<int>("Steps").GetValue();
+		bool smooth_selected = GetParam<bool>("Smooth Selected").GetValue();
+		bool cotangent_weight = GetParam<bool>("Cotangent Weight").GetValue();
 
 		vcg::tri::Smooth<VcgMesh>::VertexCoordLaplacian(input_mesh, steps, smooth_selected, cotangent_weight);
 		return true;
@@ -97,46 +81,8 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// Closures
-// TODO: find a cleaner design for this..
 
-ConvexHullPlugin plugin0;
-LaplacianSmoothPlugin plugin1;
-VcgPlugin* gRuntimePool[] = {
-	&plugin0,
-	&plugin1,
-	// There must be a number of exactly PLUGIN_COUNT plugins in this array
-};
-
-#define MAKE_PLUGIN_CLOSURES(nth) \
-static void plugin ## nth ## _setHost(OfxHost *host) { \
-	gRuntimePool[nth]->setHost(host); \
-} \
-static OfxStatus plugin ## nth ## _mainEntry(const char *action, \
-	                                         const void *handle, \
-	                                         OfxPropertySetHandle inArgs, \
-	                                         OfxPropertySetHandle outArgs) { \
-	return gRuntimePool[nth]->mainEntry(action, handle, inArgs, outArgs); \
-}
-
-#define REGISTER_PLUGIN_CLOSURE(index) \
-gRuntimePool[index]->ofxPlugin.mainEntry = plugin ## index ## _mainEntry; \
-gRuntimePool[index]->ofxPlugin.setHost = plugin ## index ## _setHost;
-
-MAKE_PLUGIN_CLOSURES(0)
-MAKE_PLUGIN_CLOSURES(1)
-// Add such a line for each n < PLUGIN_COUNT. (This is needed to create
-// individual C entry points of the form pluginX_mainEntry for each plug-in)
-
-OfxExport int OfxGetNumberOfPlugins(void) {
-	REGISTER_PLUGIN_CLOSURE(0)
-	REGISTER_PLUGIN_CLOSURE(1)
-	// Define here plug-ins for each n < PLUGIN_COUNT, providing an identifier
-	// and pointers to the cooking and description functions. These functions
-	// are defined above. Follow the examples of the other plug-ins.
-    return PLUGIN_COUNT;
-}
-
-OfxExport OfxPlugin *OfxGetPlugin(int nth) {
-	return &gRuntimePool[nth]->ofxPlugin;
-}
+MfxRegister(
+	ConvexHullPlugin,
+	LaplacianSmoothPlugin
+);

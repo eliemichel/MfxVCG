@@ -29,6 +29,7 @@ set(LIB
   openmesheffect_openfx
   openmesheffect_util
   vcglib
+  CppPluginSupport
 )
 
 add_library(mfx_vcg_plugin SHARED ${SRC})

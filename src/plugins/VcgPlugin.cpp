@@ -18,37 +18,9 @@
 
 #include "VcgPlugin.h"
 
-VcgPlugin::VcgPlugin() {
-	ofxPlugin.pluginApi = kOfxMeshEffectPluginApi;
-	ofxPlugin.apiVersion = kOfxMeshEffectPluginApiVersion;
-	ofxPlugin.pluginVersionMajor = 1;
-	ofxPlugin.pluginVersionMinor = 0;
-}
-
-OfxStatus VcgPlugin::load() {
-    return kOfxStatOK;
-}
-
-OfxStatus VcgPlugin::unload() {
-    return kOfxStatOK;
-}
-
-OfxStatus VcgPlugin::describe(OfxMeshEffectHandle descriptor) {
-    bool missing_suite =
-        NULL == propertySuite ||
-        NULL == parameterSuite ||
-        NULL == meshEffectSuite;
-    if (missing_suite) {
-        return kOfxStatErrMissingHostFeature;
-    }
-
-    OfxPropertySetHandle inputProperties;
-    meshEffectSuite->inputDefine(descriptor, kOfxMeshMainInput, &inputProperties);
-    propertySuite->propSetString(inputProperties, kOfxPropLabel, 0, "Main Input");
-
-    OfxPropertySetHandle outputProperties;
-    meshEffectSuite->inputDefine(descriptor, kOfxMeshMainOutput, &outputProperties);
-    propertySuite->propSetString(outputProperties, kOfxPropLabel, 0, "Main Output");
+OfxStatus VcgPlugin::Describe(OfxMeshEffectHandle descriptor) {
+	AddInput(kOfxMeshMainInput);
+	AddInput(kOfxMeshMainOutput);
 
     OfxParamSetHandle parameters;
     meshEffectSuite->getParamSet(descriptor, &parameters);
@@ -57,171 +29,97 @@ OfxStatus VcgPlugin::describe(OfxMeshEffectHandle descriptor) {
     return kOfxStatOK;
 }
 
-OfxStatus VcgPlugin::createInstance(OfxMeshEffectHandle instance) {
-    return kOfxStatOK;
-}
+OfxStatus VcgPlugin::Cook(OfxMeshEffectHandle instance) {
+	MfxMesh input = GetInput(kOfxMeshMainInput).GetMesh();
 
-OfxStatus VcgPlugin::destroyInstance(OfxMeshEffectHandle instance) {
-    return kOfxStatOK;
-}
+	MfxMeshProps inputProps;
+	input.FetchProperties(inputProps);
 
-OfxStatus VcgPlugin::cook(OfxMeshEffectHandle instance) {
-    OfxTime time = 0;
-
-    // Get input/output
-    OfxMeshInputHandle input, output;
-    meshEffectSuite->inputGetHandle(instance, kOfxMeshMainInput, &input, NULL);
-    meshEffectSuite->inputGetHandle(instance, kOfxMeshMainOutput, &output, NULL);
-
-	// Get parameters
-	OfxParamSetHandle parameters;
-	meshEffectSuite->getParamSet(instance, &parameters);
-
-    // Get meshes
-    OfxMeshHandle input_mesh, output_mesh;
-	OfxPropertySetHandle input_mesh_prop, output_mesh_prop;
-    meshEffectSuite->inputGetMesh(input, time, &input_mesh, &input_mesh_prop);
-    meshEffectSuite->inputGetMesh(output, time, &output_mesh, &output_mesh_prop);
-
-    // Get input mesh data
-    int input_point_count = 0, input_vertex_count = 0, input_face_count = 0;
-    float *input_points;
-    int *input_vertices, *input_faces;
-    propertySuite->propGetInt(input_mesh_prop, kOfxMeshPropPointCount,
-                              0, &input_point_count);
-    propertySuite->propGetInt(input_mesh_prop, kOfxMeshPropVertexCount,
-                              0, &input_vertex_count);
-    propertySuite->propGetInt(input_mesh_prop, kOfxMeshPropFaceCount,
-                              0, &input_face_count);
-
-	// Get attribute pointers
-	OfxPropertySetHandle pos_attrib, vertpoint_attrib, facecounts_attrib;
-	meshEffectSuite->meshGetAttribute(input_mesh, kOfxMeshAttribPoint, kOfxMeshAttribPointPosition, &pos_attrib);
-	propertySuite->propGetPointer(pos_attrib, kOfxMeshAttribPropData,
-	                              0, (void**)&input_points);
-
-	meshEffectSuite->meshGetAttribute(input_mesh, kOfxMeshAttribVertex, kOfxMeshAttribVertexPoint, &vertpoint_attrib);
-	propertySuite->propGetPointer(vertpoint_attrib, kOfxMeshAttribPropData,
-	                              0, (void**)&input_vertices);
-
-	meshEffectSuite->meshGetAttribute(input_mesh, kOfxMeshAttribFace, kOfxMeshAttribFaceCounts, &facecounts_attrib);
-	propertySuite->propGetPointer(facecounts_attrib, kOfxMeshAttribPropData,
-	                              0, (void**)&input_faces);
+	MfxAttributeProps pointPos, vertPoint, faceLen;
+	input.GetPointAttribute(kOfxMeshAttribPointPosition).FetchProperties(pointPos);
+	input.GetVertexAttribute(kOfxMeshAttribVertexPoint).FetchProperties(vertPoint);
+	input.GetFaceAttribute(kOfxMeshAttribFaceCounts).FetchProperties(faceLen);
 
     // Transfer data to VCG mesh
     VcgMesh vcg_input_mesh, vcg_maybe_output_mesh;
 	bool in_place;
-	VcgMesh::VertexIterator vi = vcg::tri::Allocator<VcgMesh>::AddVertices(vcg_input_mesh, input_point_count);
-	VcgMesh::FaceIterator fi = vcg::tri::Allocator<VcgMesh>::AddFaces(vcg_input_mesh, input_face_count);
+	VcgMesh::VertexIterator vi = vcg::tri::Allocator<VcgMesh>::AddVertices(vcg_input_mesh, inputProps.pointCount);
+	VcgMesh::FaceIterator fi = vcg::tri::Allocator<VcgMesh>::AddFaces(vcg_input_mesh, inputProps.faceCount);
 
 	// Copy point data
 	// TODO: is there a way to create a VCG mesh on existing data buffers without copying them?
 	VcgMesh::VertexIterator vi0 = vi;
-	float *data = input_points;
-	for (int i = 0 ; i < input_point_count ; ++i) {
-		vi->P() = VcgMesh::CoordType(data[0], data[1], data[2]);
+	char *data = pointPos.data;
+	for (int i = 0 ; i < inputProps.pointCount; ++i) {
+		float* P = (float*)data;
+		vi->P() = VcgMesh::CoordType(P[0], P[1], P[2]);
 		++vi;
-		data += 3; 
+		data += pointPos.stride;
 	}
 	vi = vi0;
-	int offset = 0;
-	for (int i = 0 ; i < input_face_count ; ++i) {
-		fi->V(0) = &*(vi + input_vertices[offset + 0]);
-		fi->V(1) = &*(vi + input_vertices[offset + 1]);
-		fi->V(2) = &*(vi + input_vertices[offset + 2]);
+	
+	// Copy face data
+	char* vertData = vertPoint.data;
+	char* faceData = faceLen.data;
+	for (int i = 0 ; i < inputProps.faceCount ; ++i) {
+		for (int k = 0; k < 3; ++k)
+		{
+			int ptnum = *(int*)(vertData + k * vertPoint.stride);
+			fi->V(k) = &*(vi + ptnum);
+		}
 		++fi;
-		offset += input_faces[i];
+
+		int faceVertCount = *(int*)faceData;
+		vertData += faceVertCount * vertPoint.stride;
+		faceData += faceLen.stride;
 	}
 
 	// Call core cook function
-	if (!vcgCook(vcg_input_mesh, vcg_maybe_output_mesh, parameters, &in_place)) {
-		meshEffectSuite->inputReleaseMesh(input_mesh);
+	if (!vcgCook(vcg_input_mesh, vcg_maybe_output_mesh, &in_place)) {
+		input.Release();
 		return kOfxStatFailed;
 	}
 	VcgMesh & vcg_output_mesh = in_place ? vcg_input_mesh : vcg_maybe_output_mesh;
 
     // Allocate output mesh
-    int output_point_count = static_cast<int>(vcg_output_mesh.vert.size());
-    int output_face_count = static_cast<int>(vcg_output_mesh.face.size());
-    int output_vertex_count = 3 * output_face_count;
-	propertySuite->propSetInt(output_mesh_prop, kOfxMeshPropPointCount,
-                              0, output_point_count);
-    propertySuite->propSetInt(output_mesh_prop, kOfxMeshPropVertexCount,
-                              0, output_vertex_count);
-    propertySuite->propSetInt(output_mesh_prop, kOfxMeshPropFaceCount,
-                              0, output_face_count);
-
-    meshEffectSuite->meshAlloc(output_mesh);
+	MfxMesh output = GetInput(kOfxMeshMainOutput).GetMesh();
+    int pointCount = static_cast<int>(vcg_output_mesh.vert.size());
+    int faceCount = static_cast<int>(vcg_output_mesh.face.size());
+	output.Allocate(pointCount, 3 * faceCount, faceCount);
 
     // Get output mesh data
-    float *output_points;
-    int *output_vertices, *output_faces;
-	meshEffectSuite->meshGetAttribute(output_mesh, kOfxMeshAttribPoint, kOfxMeshAttribPointPosition, &pos_attrib);
-	propertySuite->propGetPointer(pos_attrib, kOfxMeshAttribPropData,
-	                              0, (void**)&output_points);
-
-	meshEffectSuite->meshGetAttribute(output_mesh, kOfxMeshAttribVertex, kOfxMeshAttribVertexPoint, &vertpoint_attrib);
-	propertySuite->propGetPointer(vertpoint_attrib, kOfxMeshAttribPropData,
-	                              0, (void**)&output_vertices);
-
-	meshEffectSuite->meshGetAttribute(output_mesh, kOfxMeshAttribFace, kOfxMeshAttribFaceCounts, &facecounts_attrib);
-	propertySuite->propGetPointer(facecounts_attrib, kOfxMeshAttribPropData,
-	                              0, (void**)&output_faces);
+	output.GetPointAttribute(kOfxMeshAttribPointPosition).FetchProperties(pointPos);
+	output.GetVertexAttribute(kOfxMeshAttribVertexPoint).FetchProperties(vertPoint);
+	output.GetFaceAttribute(kOfxMeshAttribFaceCounts).FetchProperties(faceLen);
 
     // Fill in output data
-	size_t i = 0;
-	for (vi = vcg_output_mesh.vert.begin() ; vi != vcg_output_mesh.vert.end(); ++vi, ++i) {
-		output_points[3 * i + 0] = vi->P().X();
-		output_points[3 * i + 1] = vi->P().Y();
-		output_points[3 * i + 2] = vi->P().Z();
+	data = pointPos.data;
+	for (vi = vcg_output_mesh.vert.begin() ; vi != vcg_output_mesh.vert.end(); ++vi) {
+		float* P = (float*)data;
+		P[0] = vi->P().X();
+		P[1] = vi->P().Y();
+		P[2] = vi->P().Z();
+		data += pointPos.stride;
 	}
-	i = 0;
-	for (fi = vcg_output_mesh.face.begin() ; fi != vcg_output_mesh.face.end() ; ++fi, ++i) {
+
+	vertData = vertPoint.data;
+	faceData = faceLen.data;
+	for (fi = vcg_output_mesh.face.begin() ; fi != vcg_output_mesh.face.end() ; ++fi) {
 		if (fi->IsD()) continue; // deleted face
-		output_faces[i] = 3;
-		output_vertices[3 * i + 0] = static_cast<int>(vcg::tri::Index(vcg_output_mesh, fi->V(0)));
-		output_vertices[3 * i + 1] = static_cast<int>(vcg::tri::Index(vcg_output_mesh, fi->V(1)));
-		output_vertices[3 * i + 2] = static_cast<int>(vcg::tri::Index(vcg_output_mesh, fi->V(2)));
+
+		*(int*)faceData = 3;
+		faceData += faceLen.stride;
+
+		for (int k = 0; k < 3; ++k) {
+			*(int*)vertData = static_cast<int>(vcg::tri::Index(vcg_output_mesh, fi->V(k)));
+			vertData += vertPoint.stride;
+		}
 	}
 
     // Release meshes
-    meshEffectSuite->inputReleaseMesh(input_mesh);
-    meshEffectSuite->inputReleaseMesh(output_mesh);
+	input.Release();
+	output.Release();
 
     return kOfxStatOK;
-}
-
-OfxStatus VcgPlugin::mainEntry(const char *action,
-	                const void *handle,
-	                OfxPropertySetHandle inArgs,
-	                OfxPropertySetHandle outArgs) {
-	if (0 == strcmp(action, kOfxActionLoad)) {
-		return load();
-	}
-	if (0 == strcmp(action, kOfxActionUnload)) {
-		return unload();
-	}
-	if (0 == strcmp(action, kOfxActionDescribe)) {
-		return describe((OfxMeshEffectHandle)handle);
-	}
-	if (0 == strcmp(action, kOfxActionCreateInstance)) {
-		return createInstance((OfxMeshEffectHandle)handle);
-	}
-	if (0 == strcmp(action, kOfxActionDestroyInstance)) {
-		return destroyInstance((OfxMeshEffectHandle)handle);
-	}
-	if (0 == strcmp(action, kOfxMeshEffectActionCook)) {
-		return cook((OfxMeshEffectHandle)handle);
-	}
-	return kOfxStatReplyDefault;
-}
-
-void VcgPlugin::setHost(OfxHost *_host) {
-	host = _host;
-	if (NULL != host) {
-		propertySuite = (OfxPropertySuiteV1*)host->fetchSuite(host->host, kOfxPropertySuite, 1);
-		parameterSuite = (OfxParameterSuiteV1*)host->fetchSuite(host->host, kOfxParameterSuite, 1);
-		meshEffectSuite = (OfxMeshEffectSuiteV1*)host->fetchSuite(host->host, kOfxMeshEffectSuite, 1);
-	}
 }
 

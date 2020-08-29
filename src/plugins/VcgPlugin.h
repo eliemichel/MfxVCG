@@ -16,44 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef H_VCGPLUGIN
-#define H_VCGPLUGIN
-
-#include "ofxCore.h"
-#include "ofxMeshEffect.h"
+#pragma once
 
 #include "VcgMesh.h"
 
-class VcgPlugin {
-public:
-	VcgPlugin();
+#include <PluginSupport/MfxEffect>
 
-	OfxStatus load();
-	OfxStatus unload();
-	OfxStatus describe(OfxMeshEffectHandle descriptor);
-	OfxStatus createInstance(OfxMeshEffectHandle instance);
-	OfxStatus destroyInstance(OfxMeshEffectHandle instance);
-	OfxStatus cook(OfxMeshEffectHandle instance);
-	
-	OfxStatus mainEntry(const char *action,
-	                    const void *handle,
-	                    OfxPropertySetHandle inArgs,
-	                    OfxPropertySetHandle outArgs);
-
-	void setHost(OfxHost *_host);
+class VcgPlugin : public MfxEffect {
+protected:
+	virtual OfxStatus Describe(OfxMeshEffectHandle descriptor) override;
+	virtual OfxStatus Cook(OfxMeshEffectHandle instance) override;
 
 	virtual void vcgDescribe(OfxParamSetHandle parameters) = 0;
 	virtual bool vcgCook(VcgMesh & input_mesh,
 			             VcgMesh & output_mesh,
-			             OfxParamSetHandle parameters,
 			             bool *in_place) = 0;
-
-public:
-	OfxPlugin ofxPlugin;
-	OfxHost *host;
-    OfxPropertySuiteV1 *propertySuite;
-    OfxParameterSuiteV1 *parameterSuite;
-    OfxMeshEffectSuiteV1 *meshEffectSuite;
 };
-
-#endif // H_VCGPLUGIN

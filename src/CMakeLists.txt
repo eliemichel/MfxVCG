@@ -21,4 +21,5 @@ add_library(vcglib INTERFACE)
 target_include_directories(vcglib INTERFACE vcglib)
 
 add_subdirectory(util)
+add_subdirectory(CppPluginSupport)
 add_subdirectory(plugins)
