@@ -27,10 +27,28 @@ class VcgVertex; class VcgEdge; class VcgFace;
 struct VcgUsedTypes : public vcg::UsedTypes<vcg::Use<VcgVertex>   ::AsVertexType,
                                            vcg::Use<VcgEdge>     ::AsEdgeType,
                                            vcg::Use<VcgFace>     ::AsFaceType>{};
-class VcgVertex  : public vcg::Vertex< VcgUsedTypes, vcg::vertex::Coord3f, vcg::vertex::Normal3f, vcg::vertex::BitFlags  >{};
-class VcgFace    : public vcg::Face<   VcgUsedTypes, vcg::face::FFAdj,  vcg::face::VertexRef, vcg::face::Normal3f, vcg::face::BitFlags > {};
-class VcgEdge    : public vcg::Edge<   VcgUsedTypes> {};
-class VcgMesh    : public vcg::tri::TriMesh< std::vector<VcgVertex>, std::vector<VcgFace> , std::vector<VcgEdge>  > {};
+class VcgVertex : public vcg::Vertex<VcgUsedTypes,
+    vcg::vertex::InfoOcf,
+    vcg::vertex::Coord3f,
+    vcg::vertex::Normal3f,
+    vcg::vertex::BitFlags,
+    vcg::vertex::Qualityf // for sampling
+>{};
+class VcgFace : public vcg::Face<VcgUsedTypes,
+    vcg::vertex::InfoOcf,
+    vcg::face::FFAdj,
+    vcg::face::VertexRef,
+    vcg::face::Normal3f,
+    vcg::face::BitFlags
+>{};
+class VcgEdge : public vcg::Edge<VcgUsedTypes,
+    vcg::vertex::InfoOcf
+> {};
+class VcgMesh : public vcg::tri::TriMesh<
+    std::vector<VcgVertex>,
+    std::vector<VcgFace>,
+    std::vector<VcgEdge>
+>{};
 
 
 #endif // H_VCGMESH

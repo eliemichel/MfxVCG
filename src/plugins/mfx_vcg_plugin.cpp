@@ -22,6 +22,7 @@
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/convex_hull.h>
 #include <vcg/complex/algorithms/smooth.h>
+#include <vcg/complex/algorithms/point_sampling.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Convex Hull Plugin
@@ -44,8 +45,8 @@ protected:
 		// allocated and is returned in output_mesh (in_place = false).
 		*in_place = false;
 
-		vcg::tri::UpdateNormal<VcgMesh>::PerFaceNormalized(input_mesh);
-		return vcg::tri::ConvexHull<VcgMesh,VcgMesh>::ComputeConvexHull(input_mesh, output_mesh);
+		UpdateNormal<VcgMesh>::PerFaceNormalized(input_mesh);
+		return ConvexHull<VcgMesh,VcgMesh>::ComputeConvexHull(input_mesh, output_mesh);
 	}
 
 };
@@ -75,7 +76,92 @@ protected:
 		bool smooth_selected = GetParam<bool>("Smooth Selected").GetValue();
 		bool cotangent_weight = GetParam<bool>("Cotangent Weight").GetValue();
 
-		vcg::tri::Smooth<VcgMesh>::VertexCoordLaplacian(input_mesh, steps, smooth_selected, cotangent_weight);
+		Smooth<VcgMesh>::VertexCoordLaplacian(input_mesh, steps, smooth_selected, cotangent_weight);
+		return true;
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Poisson Surface Sampling
+
+class PoissonSurfaceSampling : public VcgPlugin {
+public:
+	const char* GetName() override {
+		return "Surface Sampling";
+	}
+
+protected:
+	void vcgDescribe(OfxParamSetHandle parameters) override {
+		AddParam("Sample Count", 100);
+		AddParam("Distribute Regularily", true);
+		AddParam("Use Custom Radius", false);
+		AddParam("Custom Radius", 1.0)
+			.Range(1e-6f, 1e6f);
+	}
+
+	bool vcgCook(VcgMesh& input_mesh,
+		VcgMesh& output_mesh,
+		bool* in_place) override {
+		*in_place = false;
+
+		int sampleCount = GetParam<int>("Sample Count").GetValue();
+		bool regular = GetParam<bool>("Distribute Regularily").GetValue();
+		bool use_custom_radius = GetParam<bool>("Use Custom Radius").GetValue();
+		double custom_radius = GetParam<double>("Custom Radius").GetValue();
+
+		//input_mesh.vert.EnableQuality(); // if using Ocf
+
+		TrivialSampler<VcgMesh> ps;
+
+		if (regular) {
+
+			TrivialSampler<VcgMesh> ps0;
+
+			SurfaceSampling<VcgMesh>::PoissonDiskParam pp;
+
+			float radius =
+				use_custom_radius
+				? custom_radius
+				: SurfaceSampling<VcgMesh>::ComputePoissonDiskRadius(input_mesh, sampleCount);
+
+			SurfaceSampling<VcgMesh>::MontecarloPoisson(
+				input_mesh,
+				ps0,
+				sampleCount
+			);
+
+			VcgMesh montecarlo_mesh;
+			{
+				auto samples = ps0.SampleVec();
+				size_t offset = montecarlo_mesh.vert.size();
+				Allocator<VcgMesh>::AddVertices(montecarlo_mesh, samples.size());
+				for (size_t i = 0; i < samples.size(); ++i) {
+					montecarlo_mesh.vert[offset + i].P() = samples[i];
+				}
+			}
+
+			UpdateBounding<VcgMesh>::Box(input_mesh);
+
+			SurfaceSampling<VcgMesh>::HierarchicalPoissonDisk(
+				input_mesh,
+				ps,
+				montecarlo_mesh,
+				radius//,
+				//pp
+			);
+		}
+		else {
+			SurfaceSampling<VcgMesh>::Montecarlo(input_mesh, ps, sampleCount);
+		}
+
+		auto samples = ps.SampleVec();
+		size_t offset = output_mesh.vert.size();
+		Allocator<VcgMesh>::AddVertices(output_mesh, samples.size());
+		for (size_t i = 0; i < samples.size(); ++i) {
+			output_mesh.vert[offset + i].P() = samples[i];
+		}
+		std::cout << "Sampled " << samples.size() << " points in ps1" << std::endl;
+
 		return true;
 	}
 };
@@ -84,5 +170,6 @@ protected:
 
 MfxRegister(
 	ConvexHullPlugin,
-	LaplacianSmoothPlugin
+	LaplacianSmoothPlugin,
+	PoissonSurfaceSampling
 );
