@@ -9,7 +9,7 @@ MfxParam<T>::MfxParam(const MfxHost& host, OfxParamHandle param)
 
 //-----------------------------------------------------------------------------
 
-template <>
+template<>
 int MfxParam<int>::GetValue()
 {
 	int value = 0;
@@ -17,7 +17,7 @@ int MfxParam<int>::GetValue()
 	return value;
 }
 
-template <>
+template<>
 int2 MfxParam<int2>::GetValue()
 {
 	int2 value = { 0, 0 };
@@ -25,7 +25,7 @@ int2 MfxParam<int2>::GetValue()
 	return value;
 }
 
-template <>
+template<>
 int3 MfxParam<int3>::GetValue()
 {
 	int3 value = { 0, 0, 0 };
@@ -33,7 +33,7 @@ int3 MfxParam<int3>::GetValue()
 	return value;
 }
 
-template <>
+template<>
 double MfxParam<double>::GetValue()
 {
 	double value = 0;
@@ -41,7 +41,7 @@ double MfxParam<double>::GetValue()
 	return value;
 }
 
-template <>
+template<>
 double2 MfxParam<double2>::GetValue()
 {
 	double2 value = { 0, 0 };
@@ -49,7 +49,7 @@ double2 MfxParam<double2>::GetValue()
 	return value;
 }
 
-template <>
+template<>
 double3 MfxParam<double3>::GetValue()
 {
 	double3 value = { 0, 0, 0 };
@@ -57,10 +57,10 @@ double3 MfxParam<double3>::GetValue()
 	return value;
 }
 
-template <>
+template<>
 bool MfxParam<bool>::GetValue()
 {
-	bool value = 0;
+	bool value = false;
 	MFX_ENSURE(parameterSuite->paramGetValue(m_param, &value));
 	return value;
 }

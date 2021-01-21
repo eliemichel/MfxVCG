@@ -1,6 +1,6 @@
 /*
  * MfxVCG is an Open Mesh Effect plug-in providing VCGlib-based filters.
- * Copyright (C) 2019  Élie Michel
+ * Copyright (C) 2019  Ã‰lie Michel
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

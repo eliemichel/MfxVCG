@@ -7,15 +7,16 @@
 
 void MfxEffect::SetHost(OfxHost* host)
 {
-    //host = host;
     if (NULL != host) {
         m_host.propertySuite = static_cast<const OfxPropertySuiteV1*>(host->fetchSuite(host->host, kOfxPropertySuite, 1));
         m_host.parameterSuite = static_cast<const OfxParameterSuiteV1*>(host->fetchSuite(host->host, kOfxParameterSuite, 1));
         m_host.meshEffectSuite = static_cast<const OfxMeshEffectSuiteV1*>(host->fetchSuite(host->host, kOfxMeshEffectSuite, 1));
+        m_host.messageSuite = static_cast<const OfxMessageSuiteV2*>(host->fetchSuite(host->host, kOfxMessageSuite, 2));
         // aliases for more convenience
         propertySuite = m_host.propertySuite;
         parameterSuite = m_host.parameterSuite;
         meshEffectSuite = m_host.meshEffectSuite;
+        messageSuite = m_host.messageSuite;
     }
 }
 
@@ -48,6 +49,10 @@ OfxStatus MfxEffect::MainEntry(const char *action,
             SetupCook((OfxMeshEffectHandle)handle);
             return Cook((OfxMeshEffectHandle)handle);
         }
+        if (0 == strcmp(action, kOfxMeshEffectActionIsIdentity)) {
+            SetupIsIdentity((OfxMeshEffectHandle)handle);
+            return IsIdentity((OfxMeshEffectHandle)handle);
+        }
         return kOfxStatReplyDefault;
     }
     catch (MfxSuiteException &e)
@@ -62,8 +67,9 @@ OfxStatus MfxEffect::MainEntry(const char *action,
 MfxInputDef MfxEffect::AddInput(const char *name)
 {
     OfxPropertySetHandle inputProps;
-    MFX_ENSURE(meshEffectSuite->inputDefine(m_descriptor, name, &inputProps));
-    return MfxInputDef(host(), inputProps);
+    OfxMeshInputHandle input;
+    MFX_ENSURE(meshEffectSuite->inputDefine(m_descriptor, name, &input, &inputProps));
+    return MfxInputDef(host(), input, inputProps);
 }
 
 MfxParamDef<int> MfxEffect::AddParam(const char *name, int defaultValue)
@@ -163,6 +169,12 @@ void MfxEffect::SetupDescribe(OfxMeshEffectHandle descriptor)
 }
 
 void MfxEffect::SetupCook(OfxMeshEffectHandle instance)
+{
+    m_instance = instance;
+    MFX_ENSURE(meshEffectSuite->getParamSet(instance, &m_parameters));
+}
+
+void MfxEffect::SetupIsIdentity(OfxMeshEffectHandle instance)
 {
     m_instance = instance;
     MFX_ENSURE(meshEffectSuite->getParamSet(instance, &m_parameters));
