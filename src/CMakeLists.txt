@@ -14,12 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-add_library(openmesheffect_openfx INTERFACE)
-target_include_directories(openmesheffect_openfx INTERFACE openfx)
+add_subdirectory(OpenMeshEffect)
 
 add_library(vcglib INTERFACE)
 target_include_directories(vcglib INTERFACE vcglib)
 
-add_subdirectory(util)
-add_subdirectory(CppPluginSupport)
 add_subdirectory(plugins)

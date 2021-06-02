@@ -26,8 +26,6 @@ set(SRC
 )
 
 set(LIB
-  openmesheffect_openfx
-  openmesheffect_util
   vcglib
   CppPluginSupport
 )
