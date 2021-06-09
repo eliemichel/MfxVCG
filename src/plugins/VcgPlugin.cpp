@@ -35,10 +35,10 @@ OfxStatus VcgPlugin::Cook(OfxMeshEffectHandle instance) {
 	MfxMeshProps inputProps;
 	input.FetchProperties(inputProps);
 
-	MfxAttributeProps pointPos, vertPoint, faceLen;
+	MfxAttributeProps pointPos, cornerPoint, faceLen;
 	input.GetPointAttribute(kOfxMeshAttribPointPosition).FetchProperties(pointPos);
-	input.GetVertexAttribute(kOfxMeshAttribVertexPoint).FetchProperties(vertPoint);
-	input.GetFaceAttribute(kOfxMeshAttribFaceCounts).FetchProperties(faceLen);
+	input.GetCornerAttribute(kOfxMeshAttribCornerPoint).FetchProperties(cornerPoint);
+	input.GetFaceAttribute(kOfxMeshAttribFaceSize).FetchProperties(faceLen);
 
     // Transfer data to VCG mesh
     VcgMesh vcg_input_mesh, vcg_maybe_output_mesh;
@@ -59,18 +59,18 @@ OfxStatus VcgPlugin::Cook(OfxMeshEffectHandle instance) {
 	vi = vi0;
 	
 	// Copy face data
-	char* vertData = vertPoint.data;
+	char* vertData = cornerPoint.data;
 	char* faceData = faceLen.data;
 	for (int i = 0 ; i < inputProps.faceCount ; ++i) {
 		for (int k = 0; k < 3; ++k)
 		{
-			int ptnum = *(int*)(vertData + k * vertPoint.stride);
+			int ptnum = *(int*)(vertData + k * cornerPoint.stride);
 			fi->V(k) = &*(vi + ptnum);
 		}
 		++fi;
 
 		int faceVertCount = *(int*)faceData;
-		vertData += faceVertCount * vertPoint.stride;
+		vertData += faceVertCount * cornerPoint.stride;
 		faceData += faceLen.stride;
 	}
 
@@ -89,8 +89,8 @@ OfxStatus VcgPlugin::Cook(OfxMeshEffectHandle instance) {
 
     // Get output mesh data
 	output.GetPointAttribute(kOfxMeshAttribPointPosition).FetchProperties(pointPos);
-	output.GetVertexAttribute(kOfxMeshAttribVertexPoint).FetchProperties(vertPoint);
-	output.GetFaceAttribute(kOfxMeshAttribFaceCounts).FetchProperties(faceLen);
+	output.GetCornerAttribute(kOfxMeshAttribCornerPoint).FetchProperties(cornerPoint);
+	output.GetFaceAttribute(kOfxMeshAttribFaceSize).FetchProperties(faceLen);
 
     // Fill in output data
 	data = pointPos.data;
@@ -102,7 +102,7 @@ OfxStatus VcgPlugin::Cook(OfxMeshEffectHandle instance) {
 		data += pointPos.stride;
 	}
 
-	vertData = vertPoint.data;
+	vertData = cornerPoint.data;
 	faceData = faceLen.data;
 	for (fi = vcg_output_mesh.face.begin() ; fi != vcg_output_mesh.face.end() ; ++fi) {
 		if (fi->IsD()) continue; // deleted face
@@ -112,7 +112,7 @@ OfxStatus VcgPlugin::Cook(OfxMeshEffectHandle instance) {
 
 		for (int k = 0; k < 3; ++k) {
 			*(int*)vertData = static_cast<int>(vcg::tri::Index(vcg_output_mesh, fi->V(k)));
-			vertData += vertPoint.stride;
+			vertData += cornerPoint.stride;
 		}
 	}
 

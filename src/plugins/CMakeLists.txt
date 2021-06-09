@@ -27,7 +27,7 @@ set(SRC
 
 set(LIB
   vcglib
-  CppPluginSupport
+  OpenMfx::Sdk
 )
 
 add_library(mfx_vcg_plugin SHARED ${SRC})
