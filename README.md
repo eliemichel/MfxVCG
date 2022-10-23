@@ -12,13 +12,7 @@ To summarize, this project enables one to use the geometry filters implemented i
 This repository contains *submodules* to include the VCGlib repository, so **do not use** the *download zip* button provided by GitHub. To clone the repository using git, run:
 
 ```
-git clone --recurse-submodules https://github.com/eliemichel/MfxVcg.git
-```
-
-If you forgot to use the `--recurse-submodules`, you can get submodules with:
-
-```
-git submodule update --init --recursive
+git clone https://github.com/eliemichel/MfxVcg.git
 ```
 
 ### Building
@@ -30,8 +24,6 @@ mkdir build
 cd build
 cmake ..
 ```
-
-Alternatively, you can run one of the `build-something` scripts.
 
 Once CMake has run, you can build the project using your favorite IDE or with the following command line in the `build` directory:
 
@@ -55,7 +47,7 @@ This software as a whole is released under the terms of the GPLv3 license. Some 
 
 ```
 MfxVCG is an OpenMfx plug-in providing VCGlib-based filters.
-Copyright (C) 2019-2021  Élie Michel
+Copyright (C) 2019-2022  Élie Michel
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
