@@ -1,5 +1,5 @@
-# MfxVCG is an Open Mesh Effect plug-in providing VCGlib-based filters.
-# Copyright (C) 2019  Élie Michel
+# MfxVCG is an OpenMfx plug-in providing VCGlib-based filters.
+# Copyright (C) 2019-2022  Élie Michel
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.0...3.18.4)
+cmake_minimum_required(VERSION 3.0...3.24)
 project(MfxVCG)
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+include(cmake/dependencies.cmake)
+include(cmake/utils.cmake)
 
 add_subdirectory(src)

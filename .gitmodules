@@ -1,6 +1,0 @@
-[submodule "src/vcglib"]
-	path = src/vcglib
-	url = https://github.com/cnr-isti-vclab/vcglib
-[submodule "OpenMeshEffect"]
-	path = src/OpenMfx
-	url = https://github.com/eliemichel/OpenMeshEffect

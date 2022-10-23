@@ -1,5 +1,5 @@
-# MfxVCG is an Openfx plug-in providing VCGlib-based filters.
-# Copyright (C) 2019-2021  Élie Michel
+# MfxVCG is an Open Mesh Effect plug-in providing VCGlib-based filters.
+# Copyright (C) 2019-2022 Élie Michel
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-add_subdirectory(OpenMfx)
-
-add_library(vcglib INTERFACE)
-target_include_directories(vcglib INTERFACE vcglib)
-
-add_subdirectory(plugins)
+add_openmfx_plugin(
+  MfxVcgPlugin
+  SRC
+    VcgMesh.h
+    VcgPlugin.h
+    VcgPlugin.cpp
+    mfx_vcg_plugin.cpp
+  LIBS
+    vcglib
+    OpenMfx::Sdk::Cpp::Plugin
+  TREAT_WARNINGS_AS_ERRORS
+)

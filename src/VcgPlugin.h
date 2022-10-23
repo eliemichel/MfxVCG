@@ -20,7 +20,7 @@
 
 #include "VcgMesh.h"
 
-#include <PluginSupport/MfxEffect>
+#include <OpenMfx/Sdk/Cpp/Plugin/MfxRegister>
 
 class VcgPlugin : public MfxEffect {
 protected:

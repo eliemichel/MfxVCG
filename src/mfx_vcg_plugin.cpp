@@ -1,6 +1,6 @@
 /*
  * MfxVCG is an Open Mesh Effect plug-in providing VCGlib-based filters.
- * Copyright (C) 2019  Élie Michel
+ * Copyright (C) 2019-2022 Élie Michel
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,13 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <PluginSupport/MfxRegister>
 #include "VcgPlugin.h"
+
+#include <OpenMfx/Sdk/Cpp/Plugin/MfxRegister>
 
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/convex_hull.h>
 #include <vcg/complex/algorithms/smooth.h>
 #include <vcg/complex/algorithms/point_sampling.h>
+
+using namespace vcg::tri;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Convex Hull Plugin
